@@ -4,16 +4,17 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 
-const supabase = getSupabaseClient();
-
 export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+    const handleAuth = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+
+      const result = await supabase.auth.getSession();
+
+      const session = result.data?.session;
 
       if (session) {
         router.replace("/dashboard");
@@ -22,7 +23,7 @@ export default function Home() {
       }
     };
 
-    checkSession();
+    handleAuth();
   }, [router]);
 
   return null;

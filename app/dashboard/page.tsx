@@ -1,13 +1,10 @@
 "use client";
 
-export const dynamic = "force-dynamic"
+export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabaseClient";
-
-const supabase = getSupabaseClient();
-
 
 type Bookmark = {
   id: string;
@@ -27,16 +24,17 @@ export default function Dashboard() {
   const [pageLoading, setPageLoading] = useState(true);
   const [adding, setAdding] = useState(false);
 
-  // -----------------------------
-  // Auth Guard (IMPORTANT)
-  // -----------------------------
+  // --------------------------------
+  // Auth Guard
+  // --------------------------------
   useEffect(() => {
     const checkAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
 
-      if (!session) {
+      const result = await supabase.auth.getSession();
+
+      if (!result.data?.session) {
         router.replace("/login");
         return;
       }
@@ -47,11 +45,24 @@ export default function Dashboard() {
     checkAuth();
   }, [router]);
 
-  // -----------------------------
+  // --------------------------------
   // Fetch bookmarks + realtime
-  // -----------------------------
+  // --------------------------------
   useEffect(() => {
     if (checkingAuth) return;
+
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    const fetchBookmarks = async () => {
+      const { data } = await supabase
+        .from("bookmarks")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      setBookmarks(data || []);
+      setPageLoading(false);
+    };
 
     fetchBookmarks();
 
@@ -60,7 +71,7 @@ export default function Dashboard() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "bookmarks" },
-        () => fetchBookmarks()
+        fetchBookmarks
       )
       .subscribe();
 
@@ -69,27 +80,19 @@ export default function Dashboard() {
     };
   }, [checkingAuth]);
 
-  const fetchBookmarks = async () => {
-    const { data } = await supabase
-      .from("bookmarks")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    setBookmarks(data || []);
-    setPageLoading(false);
-  };
-
-  // -----------------------------
+  // --------------------------------
   // Add bookmark (optimistic)
-  // -----------------------------
+  // --------------------------------
   const addBookmark = async () => {
     if (!title || !url) return;
 
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
     setAdding(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const userResult = await supabase.auth.getUser();
+    const user = userResult.data?.user;
 
     if (!user) return;
 
@@ -112,25 +115,31 @@ export default function Dashboard() {
     setAdding(false);
   };
 
-  // -----------------------------
+  // --------------------------------
   // Delete bookmark
-  // -----------------------------
+  // --------------------------------
   const deleteBookmark = async (id: string) => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
     setBookmarks((prev) => prev.filter((b) => b.id !== id));
     await supabase.from("bookmarks").delete().eq("id", id);
   };
 
-  // -----------------------------
+  // --------------------------------
   // Logout
-  // -----------------------------
+  // --------------------------------
   const logout = async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
     await supabase.auth.signOut();
     router.replace("/login");
   };
 
-  // -----------------------------
+  // --------------------------------
   // Prevent UI flash
-  // -----------------------------
+  // --------------------------------
   if (checkingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -139,9 +148,9 @@ export default function Dashboard() {
     );
   }
 
-  // -----------------------------
+  // --------------------------------
   // UI
-  // -----------------------------
+  // --------------------------------
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100">
       {/* Header */}
@@ -232,7 +241,6 @@ export default function Dashboard() {
 /* -----------------------------
    Skeleton Loader
 ----------------------------- */
-
 function SkeletonList() {
   return (
     <div className="space-y-4">

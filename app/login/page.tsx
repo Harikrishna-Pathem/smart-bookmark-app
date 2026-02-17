@@ -1,17 +1,40 @@
 "use client";
 
-export const dynamic = "force-dynamic"
+export const dynamic = "force-dynamic";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 
-const supabase = getSupabaseClient();
-
-
 export default function LoginPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
+  // --------------------------------
+  // Redirect if already logged in
+  // --------------------------------
+  useEffect(() => {
+    const checkSession = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+
+      const result = await supabase.auth.getSession();
+
+      if (result.data?.session) {
+        router.replace("/dashboard");
+      }
+    };
+
+    checkSession();
+  }, [router]);
+
+  // --------------------------------
+  // Google Sign-in
+  // --------------------------------
   const signInWithGoogle = async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
     setLoading(true);
 
     await supabase.auth.signInWithOAuth({
@@ -22,35 +45,37 @@ export default function LoginPage() {
     });
   };
 
+  // --------------------------------
+  // UI
+  // --------------------------------
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-md w-full max-w-md p-8 animate-fade-in">
-        {/* Title */}
         <h1 className="text-2xl font-semibold text-center mb-2">
           Welcome back 👋
         </h1>
-        <p className="text-sm text-black-800 text-center mb-6">
+
+        <p className="text-sm text-gray-600 text-center mb-6">
           Sign in to manage your bookmarks in real time
         </p>
 
-        {/* Google Button */}
         <button
           onClick={signInWithGoogle}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 border border-black-300 rounded-lg py-3 hover:bg-black-50 transition disabled:opacity-60"
+          className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg py-3 hover:bg-gray-50 transition disabled:opacity-60"
         >
           {loading ? (
-            <span className="h-5 w-5 border-2 border-black-400 border-t-transparent rounded-full animate-spin" />
+            <span className="h-5 w-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
           ) : (
             <GoogleIcon />
           )}
+
           <span className="font-medium">
             {loading ? "Redirecting..." : "Continue with Google"}
           </span>
         </button>
 
-        {/* Footer */}
-        <p className="mt-6 text-xs text-center text-black-400">
+        <p className="mt-6 text-xs text-center text-gray-400">
           No passwords. Secure Google authentication.
         </p>
       </div>
@@ -59,9 +84,8 @@ export default function LoginPage() {
 }
 
 /* ---------------------------
-   Google Icon Component
+   Google Icon
 ---------------------------- */
-
 function GoogleIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 48 48">
