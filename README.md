@@ -1,36 +1,160 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔖 Smart Bookmark App
 
-## Getting Started
+A modern, real-time bookmark management application built with **Next.js App Router**, **Supabase Authentication**, and **PostgreSQL**, featuring **Google OAuth**, protected routes, and a polished SaaS-style UI.
 
-First, run the development server:
+🔗 Live Demo:  
+https://smart-bookmark-app-lime-chi.vercel.app
+
+---
+
+## ✨ Features
+
+- 🔐 Google Authentication (OAuth) using Supabase  
+- 🛡 Protected routes (Dashboard accessible only after login)  
+- 🔄 Real-time bookmark updates with Supabase Realtime  
+- ⚡ Optimistic UI updates (no page refresh needed)  
+- ⏳ Loading states & skeleton UI  
+- 🚪 Logout functionality  
+- 🎨 Responsive, modern UI with Tailwind CSS  
+- ☁️ Deployed on Vercel  
+
+---
+
+## 🧱 Tech Stack
+
+### Frontend
+- Next.js (App Router)
+- React
+- TypeScript
+- Tailwind CSS
+
+### Backend / Services
+- Supabase
+  - Authentication (Google OAuth)
+  - PostgreSQL Database
+  - Realtime subscriptions
+
+### Deployment
+- Vercel
+
+---
+
+## 📁 Project Structure
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+smart-bookmark-app/
+├── app/
+│ ├── page.tsx # OAuth callback & root redirect
+│ ├── login/
+│ │ └── page.tsx # Login page (Google Sign-in)
+│ ├── dashboard/
+│ │ └── page.tsx # Protected dashboard
+│
+├── lib/
+│ └── supabaseClient.ts # Lazy Supabase client
+│
+├── public/
+├── styles/
+├── README.md
+└── package.json
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🔐 Authentication Flow
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. User clicks **Continue with Google**
+2. Google OAuth handled by Supabase
+3. Supabase redirects back with tokens in URL hash
+4. Root page listens to auth state changes
+5. Session is stored and URL hash is cleared
+6. User is redirected to `/dashboard`
 
-## Learn More
+This ensures a secure and production-ready OAuth flow.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛡 Route Protection
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `/login`
+  - Redirects to `/dashboard` if user is already logged in
+- `/dashboard`
+  - Redirects to `/login` if user is not authenticated
 
-## Deploy on Vercel
+This prevents unauthorized access and UI flashing.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🗃 Database Schema
+
+### `bookmarks` Table
+
+| Column       | Type      |
+|--------------|-----------|
+| id           | uuid (PK) |
+| title        | text      |
+| url          | text      |
+| user_id      | uuid (FK) |
+| created_at   | timestamp |
+
+### Row Level Security (RLS)
+
+```sql
+ALTER TABLE bookmarks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their own bookmarks"
+ON bookmarks
+FOR ALL
+USING (auth.uid() = user_id);
+```
+# ⚙️ Environment Variables
+
+Local (.env.local)
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+```
+# Production (Vercel)
+
+Add the same variables in:
+Vercel → Project → Settings → Environment Variables
+
+# 🔧 Supabase Configuration
+Site URL
+```url
+https://smart-bookmark-app-lime-chi.vercel.app
+```
+Redirect URLs
+```urls
+http://localhost:3000
+https://smart-bookmark-app-lime-chi.vercel.app
+```
+# 🚀 Run Locally
+```bash
+npm install
+npm run dev
+```
+# 🌍 Deployment
+
+1. Push code to GitHub
+2. Import project into Vercel
+3. Add environment variables
+4. Deploy
+
+The app is fully build-safe and production-ready.
+
+# 🧠 Key Highlights
+
+- Correct handling of OAuth redirect hashes
+- Lazy initialization of Supabase client
+- Build-safe Next.js App Router setup
+- Realtime updates with optimistic UI
+- Clean auth flow for production apps
+
+# 🚧 Future Enhancements
+
+- Edit bookmarks
+- Toast notifications
+- Bookmark categories
+- PWA support
+- Sharing bookmarks
